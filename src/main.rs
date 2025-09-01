@@ -11,7 +11,7 @@ mod records;
 mod view;
 
 use crate::baby_spawner::{BabySpawnerConfig, BabySpawnerPlugin};
-use crate::location::prelude::LocationPlugin;
+use crate::inventory::InventoryPlugin;
 use crate::mortality::system::apply_mortality_with_rate;
 use crate::records::{rolling_mean::RollingMean, Records};
 

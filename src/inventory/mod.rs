@@ -1,4 +1,4 @@
-pub mod inventory;
+pub mod component;
 pub mod plugin;
 
-pub use inventory::Inventory;
+pub use plugin::InventoryPlugin;
