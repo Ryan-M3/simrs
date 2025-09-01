@@ -6,6 +6,7 @@ use bevy::prelude::*;
 
 mod baby_spawner;
 mod inventory;
+mod jobs;
 mod mortality;
 mod person;
 mod records;
@@ -14,7 +15,8 @@ mod view;
 use crate::baby_spawner::{BabySpawnerConfig, BabySpawnerPlugin};
 use crate::inventory::InventoryPlugin;
 use crate::mortality::system::apply_mortality_with_rate;
-use crate::records::{rolling_mean::RollingMean, Records};
+use crate::records::{Records, rolling_mean::RollingMean};
+use jobs::Job;
 
 const SEC: f64 = 1.0;
 const MIN: f64 = 60.0 * SEC;
@@ -37,6 +39,17 @@ fn debug_years(time: Res<Time<Virtual>>) {
     }
 }
 
+fn spawn_jobs(mut commands: Commands) {
+    let school = Job::builder()
+        .add_role(20, 200)
+        .age_lt(18) // students
+        .add_role(1, 10)
+        .age_gte(18) // teachers
+        .build();
+
+    commands.spawn(school);
+}
+
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
@@ -44,6 +57,8 @@ fn main() {
         .add_plugins(BabySpawnerPlugin)
         .add_plugins(records::RecordsPlugin)
         .add_plugins(mortality::MortalityPlugin)
+        .add_plugins(jobs::JobsPlugin)
+        .add_systems(Startup, spawn_jobs)
         //.add_systems(Startup, |mut time: ResMut<Time<Virtual>>| {
         //    time.set_relative_speed(DAY as f32);
         //})
