@@ -1,0 +1,20 @@
+[package]
+name = "simrs"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+bevy_app   = "0.16"
+bevy_ecs   = "0.16"
+bevy_time  = "0.16"
+bevy_utils = "0.16"
+bevy_log   = "0.16"
+rand       = "0.9"
+rand_distr = "0.5"
+
+# Optional full Bevy (window/graphics) you can toggle later
+bevy = { version = "0.16", optional = true }
+
+[features]
+graphics = ["bevy"]
+

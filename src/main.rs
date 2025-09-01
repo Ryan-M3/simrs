@@ -1,0 +1,64 @@
+#![allow(dead_code)]
+#![allow(unused_imports)]
+#![allow(unused_variables)]
+
+use bevy::prelude::*;
+
+mod baby_spawner;
+mod mortality;
+mod person;
+mod records;
+mod view;
+
+use crate::baby_spawner::{BabySpawnerConfig, BabySpawnerPlugin};
+use crate::location::prelude::LocationPlugin;
+use crate::mortality::system::apply_mortality_with_rate;
+use crate::records::{rolling_mean::RollingMean, Records};
+
+const SEC: f64 = 1.0;
+const MIN: f64 = 60.0 * SEC;
+const HR: f64 = 60.0 * MIN;
+const DAY: f64 = 24.0 * HR;
+const YR: f64 = 365.0 * DAY;
+const SPEED: f64 = DAY; // 1 sec realtime = 1 day gametime
+
+const BIRTHS_PER_YEAR: f64 = 1_000.0;
+const AVERAGE_LIFESPAN_YEARS: f64 = 65.0;
+
+fn debug_years(time: Res<Time<Virtual>>) {
+    let weeks = (time.elapsed_secs_f64() / (DAY * 7.0) * SPEED) as u64;
+    static mut LAST: u64 = 0;
+    unsafe {
+        if weeks > LAST {
+            println!("{} weeks have passed", weeks);
+            LAST = weeks;
+        }
+    }
+}
+
+fn main() {
+    App::new()
+        .add_plugins(DefaultPlugins)
+        .add_plugins(view::ViewPlugin)
+        .add_plugins(BabySpawnerPlugin)
+        .add_plugins(records::RecordsPlugin)
+        .add_plugins(mortality::MortalityPlugin)
+        //.add_systems(Startup, |mut time: ResMut<Time<Virtual>>| {
+        //    time.set_relative_speed(DAY as f32);
+        //})
+        .insert_resource(BabySpawnerConfig {
+            per_sec: BIRTHS_PER_YEAR / YR * SPEED,
+        })
+        .insert_resource(Records {
+            births: 0,
+            deaths: 0,
+            birth_rate: RollingMean::new(DAY),
+            death_rate: RollingMean::new(DAY),
+        })
+        .add_systems(Update, {
+            let deaths_per_sec_per_person = SPEED / (AVERAGE_LIFESPAN_YEARS * YR);
+            apply_mortality_with_rate(deaths_per_sec_per_person)
+        })
+        .add_systems(Update, debug_years)
+        .run();
+}
