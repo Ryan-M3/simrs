@@ -5,6 +5,7 @@
 use bevy::prelude::*;
 
 mod baby_spawner;
+mod inventory;
 mod mortality;
 mod person;
 mod records;
