@@ -30,14 +30,24 @@ pub struct JobBuilder {
 
 impl Job {
     pub fn builder() -> JobBuilder {
-        JobBuilder { roles: Vec::new(), current: None }
+        JobBuilder {
+            roles: Vec::new(),
+            current: None,
+        }
     }
 }
 
 impl JobBuilder {
     /// Start a new role with seat bounds.
     pub fn add_role(mut self, min: u32, max: u32) -> Self {
-        self.roles.push((RoleSpec { min, max, constraints: Vec::new() }, Vec::new()));
+        self.roles.push((
+            RoleSpec {
+                min,
+                max,
+                constraints: Vec::new(),
+            },
+            Vec::new(),
+        ));
         self.current = Some(self.roles.len() - 1);
         self
     }
@@ -51,11 +61,19 @@ impl JobBuilder {
     }
 
     // Sugar: ontologically readable methods (you can add more later)
-    pub fn age_lt(self, n: u8) -> Self { self.with_constraint(Constraint::AgeLessThan(n)) }
-    pub fn age_gte(self, n: u8) -> Self { self.with_constraint(Constraint::AgeAtLeast(n)) }
+    pub fn age_lt(self, n: u8) -> Self {
+        self.with_constraint(Constraint::AgeLessThan(n))
+    }
+    pub fn age_gte(self, n: u8) -> Self {
+        self.with_constraint(Constraint::AgeAtLeast(n))
+    }
 
     /// Finalize into a Job component.
     pub fn build(self) -> Job {
         Job { roles: self.roles }
     }
+}
+
+pub fn vacancy(role: &(RoleSpec, Vec<Entity>)) -> u32 {
+    role.0.min.saturating_sub(role.1.len() as u32)
 }
