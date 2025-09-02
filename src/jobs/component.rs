@@ -16,15 +16,15 @@ pub struct RoleSpec {
     pub constraints: Vec<Constraint>,
 }
 
-/// A Job is a list of role definitions.
+/// A Job is a list of role definitions paired with their members.
 #[derive(Component, Default)]
 pub struct Job {
-    pub roles: Vec<RoleSpec>,
+    pub roles: Vec<(RoleSpec, Vec<Entity>)>, // (spec, members)
 }
 
 /// Fluent builder so you can write ontology-like lines in `main`.
 pub struct JobBuilder {
-    roles: Vec<RoleSpec>,
+    roles: Vec<(RoleSpec, Vec<Entity>)>,
     current: Option<usize>, // index of the most recently added role
 }
 
@@ -37,7 +37,7 @@ impl Job {
 impl JobBuilder {
     /// Start a new role with seat bounds.
     pub fn add_role(mut self, min: u32, max: u32) -> Self {
-        self.roles.push(RoleSpec { min, max, constraints: Vec::new() });
+        self.roles.push((RoleSpec { min, max, constraints: Vec::new() }, Vec::new()));
         self.current = Some(self.roles.len() - 1);
         self
     }
@@ -45,7 +45,7 @@ impl JobBuilder {
     /// Attach a constraint to the most recently added role.
     pub fn with_constraint(mut self, c: Constraint) -> Self {
         if let Some(i) = self.current {
-            self.roles[i].constraints.push(c);
+            self.roles[i].0.constraints.push(c); // .0 = RoleSpec
         }
         self
     }
