@@ -5,6 +5,7 @@
 use bevy::prelude::*;
 
 mod baby_spawner;
+mod gregslist;
 mod inventory;
 mod jobs;
 mod mortality;
@@ -58,6 +59,7 @@ fn main() {
         .add_plugins(records::RecordsPlugin)
         .add_plugins(mortality::MortalityPlugin)
         .add_plugins(jobs::JobsPlugin)
+        .add_plugins(gregslist::GregslistPlugin::new(60.0))
         .add_systems(Startup, spawn_jobs)
         //.add_systems(Startup, |mut time: ResMut<Time<Virtual>>| {
         //    time.set_relative_speed(DAY as f32);
