@@ -1,14 +1,14 @@
 use bevy_app::prelude::*;
 use bevy_ecs::prelude::*;
-use bevy_time::prelude::*;
 use std::collections::HashSet;
 
 #[derive(Resource, Default)]
 pub struct Gregslist {
     pub ads: Vec<Advert>,
-    pub index: HashSet<(Entity, usize)>,
+    pub index: HashSet<(Entity, usize)>, // (job, role_index) -> existence guard
 }
 
+#[derive(Clone)]
 pub struct Advert {
     pub job: Entity,
     pub role_index: usize,

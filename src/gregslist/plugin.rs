@@ -25,24 +25,24 @@ impl Plugin for GregslistPlugin {
     }
 }
 
-pub fn gregslist_expiration_system(
+fn gregslist_expiration_system(
     time: Res<Time>,
-    config: Res<GregslistConfig>,
+    cfg: Res<GregslistConfig>,
     mut board: ResMut<Gregslist>,
     mut dirty: EventWriter<VacancyDirty>,
 ) {
     let now = time.elapsed_secs();
-    let mut expired: Vec<(Entity, usize)> = Vec::new();
+    let mut removed: Vec<(Entity, usize)> = Vec::new();
     board.ads.retain(|ad| {
-        if now - ad.date_posted > config.expiry_secs {
-            expired.push((ad.job, ad.role_index));
-            false
-        } else {
-            true
+        let keep = now - ad.date_posted <= cfg.expiry_secs;
+        if !keep {
+            removed.push((ad.job, ad.role_index));
         }
+        keep
     });
-    for (job, role_index) in expired {
-        board.index.remove(&(job, role_index));
-        dirty.write(VacancyDirty { job });
+
+    for pair in removed {
+        board.index.remove(&pair);
+        dirty.write(VacancyDirty { job: pair.0 });
     }
 }
