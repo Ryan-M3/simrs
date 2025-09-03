@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use super::component::{Advert, Gregslist, GregslistConfig, VacancyDirty};
+use super::component::{Gregslist, GregslistConfig, VacancyDirty};
 
 pub struct GregslistPlugin {
     expiry_secs: f32,
@@ -19,11 +19,11 @@ impl Plugin for GregslistPlugin {
             expiry_secs: self.expiry_secs,
         });
         app.add_event::<VacancyDirty>();
-        app.add_systems(Update, (gregslist_cleaner, hiring_manager_post).chain());
+        app.add_systems(Update, gregslist_expiration_system);
     }
 }
 
-fn gregslist_cleaner(
+pub fn gregslist_expiration_system(
     time: Res<Time>,
     config: Res<GregslistConfig>,
     mut board: ResMut<Gregslist>,
@@ -42,36 +42,5 @@ fn gregslist_cleaner(
     for (job, role_index) in expired {
         board.index.remove(&(job, role_index));
         dirty.send(VacancyDirty { job });
-    }
-}
-
-fn hiring_manager_post(
-    mut events: EventReader<VacancyDirty>,
-    jobs: Query<&crate::jobs::component::Job>,
-    mut board: ResMut<Gregslist>,
-    time: Res<Time>,
-) {
-    let now = time.elapsed_secs();
-    for ev in events.read() {
-        if let Ok(job) = jobs.get(ev.job) {
-            for (i, (spec, members)) in job.roles.iter().enumerate() {
-                let vacancy = spec.min.saturating_sub(members.len() as u32);
-                let key = (ev.job, i);
-                if vacancy > 0 {
-                    if !board.index.contains(&key) {
-                        board.ads.push(Advert {
-                            job: ev.job,
-                            role_index: i,
-                            date_posted: now,
-                        });
-                        board.index.insert(key);
-                    }
-                } else if board.index.remove(&key) {
-                    board
-                        .ads
-                        .retain(|ad| !(ad.job == ev.job && ad.role_index == i));
-                }
-            }
-        }
     }
 }
