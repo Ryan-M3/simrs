@@ -1,4 +1,6 @@
-use bevy::prelude::*;
+use bevy_app::prelude::*;
+use bevy_ecs::prelude::*;
+use bevy_time::prelude::*;
 
 use super::component::{Gregslist, GregslistConfig, VacancyDirty};
 
@@ -41,6 +43,6 @@ pub fn gregslist_expiration_system(
     });
     for (job, role_index) in expired {
         board.index.remove(&(job, role_index));
-        dirty.send(VacancyDirty { job });
+        dirty.write(VacancyDirty { job });
     }
 }

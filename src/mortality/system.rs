@@ -1,4 +1,6 @@
-use bevy::prelude::*;
+use bevy_app::prelude::*;
+use bevy_ecs::prelude::*;
+use bevy_time::prelude::*;
 use rand::Rng;
 
 use crate::baby_spawner::system::GameRNG; // your RNG resource

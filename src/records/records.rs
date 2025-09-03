@@ -1,7 +1,9 @@
 use crate::baby_spawner::BabyBorn;
 use crate::mortality::Death;
 use crate::records::RollingMean;
-use bevy::prelude::*;
+use bevy_app::prelude::*;
+use bevy_ecs::prelude::*;
+use bevy_time::prelude::*;
 
 #[derive(Resource, Debug, Clone)]
 pub struct Records {

@@ -1,4 +1,6 @@
-use bevy::prelude::*;
+use bevy_app::prelude::*;
+use bevy_ecs::prelude::*;
+use bevy_time::prelude::*;
 
 use crate::baby_spawner::{
     config::BabySpawnerConfig, events::BabyBorn, system::spawn_babies, system::GameRNG,
