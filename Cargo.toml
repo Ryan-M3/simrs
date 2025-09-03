@@ -16,5 +16,6 @@ rand_distr = "0.5"
 bevy = { version = "0.16", optional = true }
 
 [features]
+default = []
 graphics = ["bevy"]
 

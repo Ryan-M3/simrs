@@ -1,4 +1,6 @@
-use bevy::prelude::*;
+use bevy_app::prelude::*;
+use bevy_ecs::prelude::*;
+use bevy_time::prelude::*;
 
 use crate::gregslist::{Advert, Gregslist, VacancyDirty};
 use crate::gregslist::plugin::gregslist_expiration_system;

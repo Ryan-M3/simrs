@@ -2,7 +2,9 @@
 #![allow(unused_imports)]
 #![allow(unused_variables)]
 
-use bevy::prelude::*;
+use bevy_app::prelude::*;
+use bevy_ecs::prelude::*;
+use bevy_time::prelude::*;
 
 mod baby_spawner;
 mod gregslist;
@@ -12,6 +14,7 @@ mod jobs;
 mod mortality;
 mod person;
 mod records;
+#[cfg(feature = "graphics")]
 mod view;
 
 use crate::baby_spawner::{BabySpawnerConfig, BabySpawnerPlugin};
@@ -53,10 +56,13 @@ fn spawn_jobs(mut commands: Commands) {
 }
 
 fn main() {
-    App::new()
-        .add_plugins(DefaultPlugins)
-        .add_plugins(view::ViewPlugin)
-        .add_plugins(BabySpawnerPlugin)
+    let mut app = App::new();
+    #[cfg(feature = "graphics")]
+    {
+        app.add_plugins(DefaultPlugins)
+            .add_plugins(view::ViewPlugin);
+    }
+    app.add_plugins(BabySpawnerPlugin)
         .add_plugins(records::RecordsPlugin)
         .add_plugins(mortality::MortalityPlugin)
         .add_plugins(jobs::JobsPlugin)
