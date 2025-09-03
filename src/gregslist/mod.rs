@@ -2,6 +2,5 @@ pub mod component;
 
 pub mod plugin;
 
-pub use plugin::{GregslistPlugin, gregslist_expiration_system};
-
-pub use component::{Advert, Gregslist, GregslistConfig, VacancyDirty};
+pub use component::{Gregslist, Advert, GregslistConfig, VacancyDirty};
+pub use plugin::GregslistPlugin;
