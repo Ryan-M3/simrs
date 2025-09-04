@@ -1,6 +1,6 @@
 use bevy_app::prelude::*;
 use bevy_ecs::prelude::*;
-use bevy_time::{Time, Virtual};
+use bevy_time::{Time, Real};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use rand_distr::{Distribution, Poisson};
@@ -19,7 +19,7 @@ impl FromWorld for GameRNG {
 
 pub fn spawn_babies(
     mut commands: Commands,
-    time: Res<Time<Virtual>>,
+    time: Res<Time<Real>>,
     cfg: Res<BabySpawnerConfig>,
     mut rng: ResMut<GameRNG>,
     mut writer: EventWriter<BabyBorn>,

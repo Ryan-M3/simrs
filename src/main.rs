@@ -4,7 +4,7 @@
 
 use bevy_app::prelude::*;
 use bevy_ecs::prelude::*;
-use bevy_time::{Time, Virtual};
+use bevy_time::{Time, Real};
 
 mod baby_spawner;
 mod gregslist;
@@ -33,7 +33,7 @@ const SPEED: f64 = DAY; // 1 sec realtime = 1 day gametime
 const BIRTHS_PER_YEAR: f64 = 1_000.0;
 const AVERAGE_LIFESPAN_YEARS: f64 = 65.0;
 
-fn debug_years(time: Res<Time<Virtual>>) {
+fn debug_years(time: Res<Time<Real>>) {
     let weeks = (time.elapsed_secs_f64() / (DAY * 7.0) * SPEED) as u64;
     static mut LAST: u64 = 0;
     unsafe {
@@ -62,6 +62,10 @@ fn main() {
         app.add_plugins(DefaultPlugins)
             .add_plugins(view::ViewPlugin);
     }
+    #[cfg(not(feature = "graphics"))]
+    {
+        app.add_plugins(bevy_time::TimePlugin::default());
+    }
     app.add_plugins(BabySpawnerPlugin)
         .add_plugins(records::RecordsPlugin)
         .add_plugins(mortality::MortalityPlugin)
@@ -69,7 +73,7 @@ fn main() {
         .add_plugins(gregslist::GregslistPlugin::new(60.0))
         .add_plugins(hiring_manager::HiringManagerPlugin::new(8))
         .add_systems(Startup, spawn_jobs)
-        //.add_systems(Startup, |mut time: ResMut<Time<Virtual>>| {
+        //.add_systems(Startup, |mut time: ResMut<Time<Real>>| {
         //    time.set_relative_speed(DAY as f32);
         //})
         .insert_resource(BabySpawnerConfig {

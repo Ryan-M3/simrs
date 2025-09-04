@@ -1,6 +1,6 @@
 use bevy_app::prelude::*;
 use bevy_ecs::prelude::*;
-use bevy_time::{Time, Virtual};
+use bevy_time::{Time, Real};
 use rand::Rng;
 
 use crate::baby_spawner::system::GameRNG; // your RNG resource
@@ -10,11 +10,11 @@ use crate::person::Person;
 /// Every time step, with a given probability, kill an entity.
 pub fn apply_mortality_with_rate(
     rate_per_sec_per_person: f64,
-) -> impl FnMut(Res<Time<Virtual>>, ResMut<GameRNG>, Query<Entity, With<Person>>, EventWriter<Death>)
+) -> impl FnMut(Res<Time<Real>>, ResMut<GameRNG>, Query<Entity, With<Person>>, EventWriter<Death>)
        + Send
        + Sync
        + 'static {
-    move |time: Res<Time<Virtual>>,
+    move |time: Res<Time<Real>>,
           mut rng: ResMut<GameRNG>,
           people: Query<Entity, With<Person>>,
           mut writer: EventWriter<Death>| {

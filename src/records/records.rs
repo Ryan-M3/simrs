@@ -3,7 +3,7 @@ use crate::mortality::Death;
 use crate::records::RollingMean;
 use bevy_app::prelude::*;
 use bevy_ecs::prelude::*;
-use bevy_time::{Time, Virtual};
+use bevy_time::{Time, Real};
 
 #[derive(Resource, Debug, Clone)]
 pub struct Records {
@@ -20,7 +20,7 @@ impl Records {
 }
 
 pub fn record_births(
-    time: Res<Time<Virtual>>,
+    time: Res<Time<Real>>,
     mut records: ResMut<Records>,
     mut born: EventReader<BabyBorn>,
 ) {
@@ -32,7 +32,7 @@ pub fn record_births(
 }
 
 pub fn record_deaths(
-    time: Res<Time<Virtual>>,
+    time: Res<Time<Real>>,
     mut records: ResMut<Records>,
     mut deaths: EventReader<Death>,
 ) {
