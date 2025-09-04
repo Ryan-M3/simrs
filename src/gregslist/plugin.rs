@@ -1,6 +1,6 @@
 use bevy_app::prelude::*;
 use bevy_ecs::prelude::*;
-use bevy_time::prelude::*;
+use bevy_time::{Time, Virtual};
 
 use super::component::{Gregslist, GregslistConfig, VacancyDirty};
 

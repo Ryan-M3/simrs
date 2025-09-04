@@ -1,5 +1,6 @@
 use crate::records::Records;
 use bevy::prelude::*;
+use bevy::time::{Time, Virtual};
 
 #[derive(Resource)]
 pub struct PopulationText(pub Entity);
