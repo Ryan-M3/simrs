@@ -5,6 +5,8 @@
 use bevy_app::prelude::*;
 use bevy_ecs::prelude::*;
 use bevy_time::{Time, Real};
+#[cfg(feature = "graphics")]
+use bevy::prelude::DefaultPlugins;
 
 mod baby_spawner;
 mod gregslist;
