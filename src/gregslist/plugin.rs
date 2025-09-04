@@ -26,7 +26,7 @@ impl Plugin for GregslistPlugin {
 }
 
 fn gregslist_expiration_system(
-    time: Res<Time>,
+    time: Res<Time<Virtual>>,
     cfg: Res<GregslistConfig>,
     mut board: ResMut<Gregslist>,
     mut dirty: EventWriter<VacancyDirty>,
