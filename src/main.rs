@@ -7,7 +7,7 @@ use bevy::prelude::DefaultPlugins;
 #[cfg(not(feature = "graphics"))]
 use bevy_app::ScheduleRunnerPlugin;
 use bevy_app::prelude::*;
-use bevy_ecs::prelude::*;
+use bevy_ecs::prelude::*; 
 #[cfg(not(feature = "graphics"))]
 use bevy_log::LogPlugin;
 use bevy_time::{Real, Time};
