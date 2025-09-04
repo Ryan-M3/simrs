@@ -2,9 +2,15 @@
 #![allow(unused_imports)]
 #![allow(unused_variables)]
 
+#[cfg(feature = "graphics")]
+use bevy::prelude::DefaultPlugins;
+#[cfg(not(feature = "graphics"))]
+use bevy_app::ScheduleRunnerPlugin;
 use bevy_app::prelude::*;
 use bevy_ecs::prelude::*;
-use bevy_time::{Time, Real};
+#[cfg(not(feature = "graphics"))]
+use bevy_log::LogPlugin;
+use bevy_time::{Real, Time};
 
 mod baby_spawner;
 mod gregslist;
@@ -64,7 +70,11 @@ fn main() {
     }
     #[cfg(not(feature = "graphics"))]
     {
-        app.add_plugins(bevy_time::TimePlugin::default());
+        app.add_plugins((
+            bevy_time::TimePlugin::default(),
+            LogPlugin::default(),
+            ScheduleRunnerPlugin::default(),
+        ));
     }
     app.add_plugins(BabySpawnerPlugin)
         .add_plugins(records::RecordsPlugin)
