@@ -3,7 +3,7 @@ use crate::mortality::Death;
 use crate::records::RollingMean;
 use bevy_app::prelude::*;
 use bevy_ecs::prelude::*;
-use bevy_time::prelude::*;
+use bevy_time::{Time, Virtual};
 
 #[derive(Resource, Debug, Clone)]
 pub struct Records {

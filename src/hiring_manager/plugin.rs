@@ -1,6 +1,6 @@
 use bevy_app::prelude::*;
 use bevy_ecs::prelude::*;
-use bevy_time::prelude::*;
+use bevy_time::{Time, Virtual};
 
 use crate::gregslist::component::{Gregslist, VacancyDirty, Advert};
 use crate::jobs::component::{Job, Constraint};
