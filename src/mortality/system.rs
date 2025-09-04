@@ -10,11 +10,11 @@ use crate::person::Person;
 /// Every time step, with a given probability, kill an entity.
 pub fn apply_mortality_with_rate(
     rate_per_sec_per_person: f64,
-) -> impl FnMut(Res<Time>, ResMut<GameRNG>, Query<Entity, With<Person>>, EventWriter<Death>)
+) -> impl FnMut(Res<Time<Virtual>>, ResMut<GameRNG>, Query<Entity, With<Person>>, EventWriter<Death>)
        + Send
        + Sync
        + 'static {
-    move |time: Res<Time>,
+    move |time: Res<Time<Virtual>>,
           mut rng: ResMut<GameRNG>,
           people: Query<Entity, With<Person>>,
           mut writer: EventWriter<Death>| {

@@ -37,7 +37,7 @@ fn mark_jobs_dirty_on_startup(
 
 // Post/remove adverts so Gregslist reflects current vacancies for dirty jobs.
 fn post_job_openings(
-    time: Res<Time>,
+    time: Res<Time<Virtual>>,
     mut board: ResMut<Gregslist>,
     mut dirty_events: EventReader<VacancyDirty>,
     jobs: Query<&Job>,

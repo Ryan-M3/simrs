@@ -19,7 +19,7 @@ impl FromWorld for GameRNG {
 
 pub fn spawn_babies(
     mut commands: Commands,
-    time: Res<Time>,
+    time: Res<Time<Virtual>>,
     cfg: Res<BabySpawnerConfig>,
     mut rng: ResMut<GameRNG>,
     mut writer: EventWriter<BabyBorn>,
