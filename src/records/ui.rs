@@ -1,6 +1,6 @@
 use crate::records::Records;
 use bevy::prelude::*;
-use bevy::time::{Time, Virtual};
+use bevy::time::{Time, Real};
 
 #[derive(Resource)]
 pub struct PopulationText(pub Entity);
@@ -32,7 +32,7 @@ pub fn spawn_population_text(mut commands: Commands, asset_server: Res<AssetServ
 }
 
 pub fn update_population_text(
-    time: Res<Time<Virtual>>,
+    time: Res<Time<Real>>,
     mut records: ResMut<Records>,
     mut q_text: Query<&mut Text>,
     text_entity: Res<PopulationText>,

@@ -8,7 +8,7 @@ use std::collections::VecDeque;
 pub struct RollingMean {
     /// Horizon length in virtual seconds (sliding window).
     pub window: f64,
-    /// Time-ordered event timestamps (seconds since startup in `Time<Virtual>`).
+    /// Time-ordered event timestamps (seconds since startup in `Time<Real>`).
     timestamps: VecDeque<f64>,
 }
 

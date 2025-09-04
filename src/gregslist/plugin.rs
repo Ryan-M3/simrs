@@ -1,6 +1,6 @@
 use bevy_app::prelude::*;
 use bevy_ecs::prelude::*;
-use bevy_time::{Time, Virtual};
+use bevy_time::{Time, Real};
 
 use super::component::{Gregslist, GregslistConfig, VacancyDirty};
 
@@ -26,7 +26,7 @@ impl Plugin for GregslistPlugin {
 }
 
 fn gregslist_expiration_system(
-    time: Res<Time<Virtual>>,
+    time: Res<Time<Real>>,
     cfg: Res<GregslistConfig>,
     mut board: ResMut<Gregslist>,
     mut dirty: EventWriter<VacancyDirty>,

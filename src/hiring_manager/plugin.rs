@@ -1,6 +1,6 @@
 use bevy_app::prelude::*;
 use bevy_ecs::prelude::*;
-use bevy_time::{Time, Virtual};
+use bevy_time::{Time, Real};
 
 use crate::gregslist::component::{Gregslist, VacancyDirty, Advert};
 use crate::jobs::component::{Job, Constraint};
@@ -37,7 +37,7 @@ fn mark_jobs_dirty_on_startup(
 
 // Post/remove adverts so Gregslist reflects current vacancies for dirty jobs.
 fn post_job_openings(
-    time: Res<Time<Virtual>>,
+    time: Res<Time<Real>>,
     mut board: ResMut<Gregslist>,
     mut dirty_events: EventReader<VacancyDirty>,
     jobs: Query<&Job>,
