@@ -1,10 +1,15 @@
 use crate::records::Records;
 use bevy::prelude::*;
-use bevy::time::{Time, Real};
+use bevy::time::{Real, Time};
+
+use crate::hiring_manager::component::Unemployed;
+use crate::person::Person;
 
 #[derive(Resource)]
 pub struct PopulationText(pub Entity);
 
+#[derive(Resource)]
+pub struct EmploymentText(pub Entity);
 pub fn spawn_population_text(mut commands: Commands, asset_server: Res<AssetServer>) {
     let e = commands
         .spawn((
@@ -31,6 +36,27 @@ pub fn spawn_population_text(mut commands: Commands, asset_server: Res<AssetServ
     commands.insert_resource(PopulationText(e));
 }
 
+pub fn spawn_employment_text(mut commands: Commands, asset_server: Res<AssetServer>) {
+    let e = commands
+        .spawn((
+            Node {
+                position_type: PositionType::Absolute,
+                top: Val::Px(40.0),
+                left: Val::Px(10.0),
+                ..default()
+            },
+            Text::new("Employed: 0"),
+            TextFont {
+                font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                font_size: 24.0,
+                ..default()
+            },
+            TextColor(Color::WHITE),
+        ))
+        .id();
+    commands.insert_resource(EmploymentText(e));
+}
+
 pub fn update_population_text(
     time: Res<Time<Real>>,
     mut records: ResMut<Records>,
@@ -54,5 +80,19 @@ pub fn update_population_text(
     if let Ok(mut text) = q_text.get_mut(text_entity.0) {
         // Text is a tuple struct; assign its String
         text.0 = s;
+    }
+}
+
+pub fn update_employment_text(
+    mut q_text: Query<&mut Text>,
+    text_entity: Res<EmploymentText>,
+    people: Query<Entity, With<Person>>,
+    unemployed: Query<Entity, With<Unemployed>>,
+) {
+    if let Ok(mut text) = q_text.get_mut(text_entity.0) {
+        let total = people.iter().count();
+        let jobless = unemployed.iter().count();
+        let employed = total.saturating_sub(jobless);
+        text.0 = format!("Employed: {}", employed);
     }
 }
