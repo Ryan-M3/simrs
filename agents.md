@@ -287,3 +287,131 @@ Exact parameter tables for diseases/infestations/memes set via builders in main.
 
 Tick unit Δt (hours/days) chosen in main; all rates scale accordingly.
 
+## Design & Naming Guidelines (Agents & Jobs)
+
+Files & Modules
+
+Per domain folder: mod.rs, component.rs, plugin.rs, system.rs (optional).
+
+UI goes in that domain under ui.rs and is always #[cfg(feature = "graphics")].
+
+Builder-only types live with their component (e.g., jobs/component.rs has Job, RoleSpec, JobBuilder).
+
+Features & Runtime Modes
+
+Headless is default-safe. Only graphics code behind:
+
+#[cfg(feature = "graphics")] mod view;
+
+In main, gate DefaultPlugins + any UI plugins with #[cfg(feature = "graphics")].
+
+Time: use Time<Real> everywhere unless explicitly sim-virtual later. Do not mix.
+
+Components (nouns, data only)
+
+Name with TitleCase nouns: Person, Job, Unemployed, Age, Inventory.
+
+No behavior inside components. Keep them #[derive(Component, Debug)] if useful.
+
+Boolean tags are single-word marker components (Unemployed, Student). Avoid is_* fields.
+
+Resources (global state)
+
+Name with TitleCase nouns: Records, Gregslist, GameRNG, ApplicationInbox.
+
+Prefer small, purpose-built resources over god-objects.
+
+If a resource broadcasts changes, add an event instead of storing flags.
+
+Events
+
+Past-tense, TitleCase: BabyBorn, Death, VacancyDirty.
+
+Keep payloads minimal (entity ids, role index, timestamp).
+
+Emit with .write(...) in systems; never read-modify-write events.
+
+Systems (present-tense verbs)
+
+Name with snake_case verbs describing one effect:
+
+post_job_openings, apply_for_jobs, evaluate_and_assign, gregslist_expiration_system.
+
+One responsibility per system; chain when needed: (A, B, C).chain().
+
+Parameters are explicit; avoid broad Query<(&A, &B, Option<&C>)> unless necessary.
+
+No global mutable state; mutate via Commands, ResMut<T>, or event writers only.
+
+Plugins
+
+One plugin per domain: GregslistPlugin, HiringManagerPlugin, RecordsPlugin.
+
+Plugins register systems/events/resources—nothing else.
+
+Constructor params reflect operational caps/config (e.g., HiringManagerPlugin::new(max_hires_per_role_per_cycle)).
+
+Jobs & Hiring Domain Terms
+
+Job: component on an entity that hosts roles: Vec<(RoleSpec, Vec<Entity>)>.
+
+RoleSpec: { min, max, constraints } (data only).
+
+Constraints enum lives with jobs; methods on JobBuilder are sugar: age_lt(n), age_gte(n).
+
+Gregslist: ads: Vec<Advert>, index: HashSet<(job, role_index)>.
+
+Advert: { job: Entity, role_index: usize, date_posted: f32 } (no logic).
+
+ApplicationInbox: Vec<Resume> queue consumed by evaluate_and_assign.
+
+Resume: { applicant, job, role_index }.
+
+Unemployed: marker removed on hire; used to compute "employed" count.
+
+UI (graphics feature only)
+
+All UI systems gated with #[cfg(feature = "graphics")].
+
+Text widgets are resources pointing to Entity ids (e.g., PopulationText, EmploymentText).
+
+Update loops read world state only; no side-effects beyond text mutation.
+
+Naming Patterns (consistency)
+
+Functions: verb_object[_qualifier]
+
+Good: record_births, update_employment_text, spawn_jobs.
+
+Config types: ThingConfig (BabySpawnerConfig, GregslistConfig, HiringConfig).
+
+Helpers inside a module: private fn constraints_ok(...) -> bool.
+
+Style
+
+Comments: sentence case, concise; align operators when it clarifies blocks.
+
+Keep systems ≤ ~30 lines; factor helpers if they grow.
+
+No placeholder names; if it’s not real, don’t add it.
+
+Don’t introduce logging/validation/“future hooks” unless asked.
+
+Data Flow (jobs search → hire)
+
+1. gregslist_expiration_system trims stale ads and emits VacancyDirty.
+
+2. post_job_openings reconciles each Job role vs min, (add/remove) Adverts.
+
+3. apply_for_jobs reads Gregslist, filters by constraints, enqueues Resumes for Unemployed.
+
+4. evaluate_and_assign admits up to HiringConfig.max_hires_per_role_per_cycle, removes Unemployed, and emits VacancyDirty.
+
+Metrics & Counters
+
+“Employed” = count<Person> - count<Unemployed>.
+
+Counters live in records domain; UI mirrors via text resources.
+
+Rolling stats (RollingMean) store timestamps; never compute by scanning history each frame.
+
