@@ -1,10 +1,10 @@
 use bevy_app::prelude::*;
 use bevy_ecs::prelude::*;
-use bevy_time::{Time, Real};
+use bevy_time::{Real, Time};
 
-use crate::gregslist::component::{Gregslist, VacancyDirty, Advert};
-use crate::jobs::component::{Job, Constraint};
-use crate::hiring_manager::component::{ApplicationInbox, Resume, HiringConfig, Unemployed, Age};
+use crate::gregslist::component::{Advert, Gregslist, VacancyDirty};
+use crate::hiring_manager::component::{Age, ApplicationInbox, HiringConfig, Resume, Unemployed};
+use crate::jobs::component::{Constraint, Job};
 
 pub struct HiringManagerPlugin {
     max_hires_per_role_per_cycle: u32,
@@ -12,16 +12,23 @@ pub struct HiringManagerPlugin {
 
 impl HiringManagerPlugin {
     pub fn new(max_hires_per_role_per_cycle: u32) -> Self {
-        Self { max_hires_per_role_per_cycle }
+        Self {
+            max_hires_per_role_per_cycle,
+        }
     }
 }
 
 impl Plugin for HiringManagerPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(HiringConfig { max_hires_per_role_per_cycle: self.max_hires_per_role_per_cycle })
-            .init_resource::<ApplicationInbox>()
-            .add_systems(Startup, mark_jobs_dirty_on_startup)
-            .add_systems(Update, (post_job_openings, apply_for_jobs, evaluate_and_assign).chain());
+        app.insert_resource(HiringConfig {
+            max_hires_per_role_per_cycle: self.max_hires_per_role_per_cycle,
+        })
+        .init_resource::<ApplicationInbox>()
+        .add_systems(Startup, mark_jobs_dirty_on_startup)
+        .add_systems(
+            Update,
+            (post_job_openings, apply_for_jobs, evaluate_and_assign).chain(),
+        );
     }
 }
 
@@ -54,13 +61,19 @@ fn post_job_openings(
                 if needed > 0 {
                     // ensure one advert exists
                     if !board.index.contains(&key) {
-                        board.ads.push(Advert { job: ev.job, role_index: i, date_posted: now });
+                        board.ads.push(Advert {
+                            job: ev.job,
+                            role_index: i,
+                            date_posted: now,
+                        });
                         board.index.insert(key);
                     }
                 } else {
                     // remove any existing advert for a now-filled role
                     if board.index.remove(&key) {
-                        board.ads.retain(|ad| !(ad.job == ev.job && ad.role_index == i));
+                        board
+                            .ads
+                            .retain(|ad| !(ad.job == ev.job && ad.role_index == i));
                     }
                 }
             }
@@ -76,18 +89,17 @@ fn apply_for_jobs(
     applicants: Query<Entity, With<Unemployed>>,
     mut inbox: ResMut<ApplicationInbox>,
 ) {
-    // Naive v1: apply once per frame to all matching adverts (inbox is drained before next frame)
+    // v1: naive flood — each unemployed applies to all matching adverts (inbox is drained next system)
     for applicant in applicants.iter() {
         let age = ages.get(applicant).ok().map(|a| a.years);
         for ad in board.ads.iter() {
             if let Ok(job) = jobs.get(ad.job) {
                 if let Some((spec, members)) = job.roles.get(ad.role_index) {
-                    // must not already be a member
+                    // skip if already a member
                     if members.iter().any(|&e| e == applicant) {
                         continue;
                     }
-
-                    // constraints check (age only for now)
+                    // simple constraints (age)
                     if constraints_ok(spec, age) {
                         inbox.resumes.push(Resume {
                             applicant,
