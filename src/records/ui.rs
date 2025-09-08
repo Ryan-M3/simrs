@@ -2,9 +2,6 @@ use crate::records::Records;
 use bevy::prelude::*;
 use bevy::time::{Real, Time};
 
-use crate::hiring_manager::component::Unemployed;
-use crate::person::Person;
-
 #[derive(Resource)]
 pub struct PopulationText(pub Entity);
 
@@ -45,7 +42,7 @@ pub fn spawn_employment_text(mut commands: Commands, asset_server: Res<AssetServ
                 left: Val::Px(10.0),
                 ..default()
             },
-            Text::new("Employed: 0"),
+            Text::new("Employment: 0%"),
             TextFont {
                 font: asset_server.load("fonts/FiraSans-Bold.ttf"),
                 font_size: 24.0,
@@ -84,15 +81,11 @@ pub fn update_population_text(
 }
 
 pub fn update_employment_text(
+    records: Res<Records>,
     mut q_text: Query<&mut Text>,
     text_entity: Res<EmploymentText>,
-    people: Query<Entity, With<Person>>,
-    unemployed: Query<Entity, With<Unemployed>>,
 ) {
     if let Ok(mut text) = q_text.get_mut(text_entity.0) {
-        let total = people.iter().count();
-        let jobless = unemployed.iter().count();
-        let employed = total.saturating_sub(jobless);
-        text.0 = format!("Employed: {}", employed);
+        text.0 = format!("Employment: {:.0}%", records.employment_rate * 100.0);
     }
 }
