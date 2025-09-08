@@ -11,6 +11,7 @@ use bevy_time::{Real, Time};
 mod baby_spawner;
 mod gregslist;
 mod hiring_manager;
+mod graph;
 mod inventory;
 mod jobs;
 mod mortality;
