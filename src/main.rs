@@ -12,10 +12,12 @@ mod baby_spawner;
 mod gregslist;
 mod hiring_manager;
 mod graph;
+mod game_events;
 mod inventory;
 mod jobs;
 mod mortality;
 mod person;
+mod personality;
 mod records;
 #[cfg(feature = "graphics")]
 mod view;
