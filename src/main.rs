@@ -9,10 +9,10 @@ use bevy_ecs::prelude::*;
 use bevy_time::{Real, Time};
 
 mod baby_spawner;
+mod game_events;
+mod graph;
 mod gregslist;
 mod hiring_manager;
-mod graph;
-mod game_events;
 mod inventory;
 mod jobs;
 mod mortality;
@@ -25,7 +25,9 @@ mod view;
 use crate::baby_spawner::{BabySpawnerConfig, BabySpawnerPlugin};
 use crate::inventory::InventoryPlugin;
 use crate::mortality::system::apply_mortality_with_rate;
-use crate::records::{rolling_mean::RollingMean, Records, VacancyTextPlugin};
+#[cfg(feature = "graphics")]
+use crate::records::VacancyTextPlugin;
+use crate::records::{Records, rolling_mean::RollingMean};
 use jobs::Job;
 
 const SEC: f64 = 1.0;
