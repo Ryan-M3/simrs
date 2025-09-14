@@ -1,417 +1,141 @@
-# Decisions (outline)
-
-1. ECS modeling
-
-Components over resources; avoid global singletons.
-
-"Events" are resolved in systems during the tick (no persistent event entities).
-
-Graph lives as a component on each entity (not a resource).
-
-2. Graph / Edge weights
-
-Directed, per-entity outgoing edges.
-
-Edge = { to, kind, channel, kernel_id, weight }.
-
-Kinds: Relationship | Pathogen | Infestation | Meme.
-
-3. Interaction kernel (unified)
-
-Effect/intensity: κ = v_affinity ⋅ u_state (dot product).
-
-Channels parametrize κ (talk, shared_air, sex, touch, media, presence, bedding, highway, …).
-
-4. Processes (growth ↔ defense engine)
-
-Node state: L (load) vs E (defense efficacy).
-
-Update per tick: logistic-like growth; adaptive defense; clearance; optional fruiting/shedding.
-
-Shedding drives spread pressure; severity (from L/E) feeds mortality.
-
-5. Diseases & analogs (defaults)
-
-Flu (agent): acute; high shedding; waning immunity.
-
-Chickenpox (agent): childhood-biased kernel; sterilizing immunity.
-
-AIDS (agent): slow; suppresses defense (E) / increases defense decay.
-
-Malaria (people↔location): mosquito load as a location process; people acquire from presence.
-
-Infestations (location): cockroach, bedbug use same L/E engine.
-
-Memes/infatuations (agent): salience as L; boredom/skepticism as E; spreads via talk/media.
-
-6. Transmission / contagion
-
-For an edge: λ = κ × channel_coeff × shedding × susceptibility.
-
-Poisson trial per tick: p = 1 − exp(−λ·Δt).
-
-Success → seed/boost a Process on the target node.
-
-7. Relationships
-
-Same kernel; Δweight = κ − decay(kind, weight, Δt).
-
-"Fruiting" concept applies (e.g., marriage as a high-output phase).
-
-8. Status effects (vectors)
-
-Many concurrent effects (e.g., intoxication, weather) as small vectors with decay/duration.
-
-Aggregated each tick into a clamped StatusVector used by kernels and gates.
-
-9. Locations & space
-
-Locations are entities with inventories; typed as Residential | Business | Commercial | Junction | Highway | Border | Airport | Port.
-
-Travel nodes are locations with FIFO queue + capacity + service_rate; they gate movement between locations.
-
-10. Traffic & accidents
-
-Accident risk evaluated during actions on relevant channels (e.g., Highway).
-
-Risk vector factors: speed, sobriety, seatbelt, vehicle safety, weather; kernel → Poisson injury/death.
-
-11. Decision & actions (per agent, per tick)
-
-Generate options (context-shortlisted actions: Drive, Walk, Work, Shop, Chat, StayHome, QueueEnter/Exit).
-
-Gate with predicates: hard Block or Penalty(risk/cost vector) (illegal/unsafe allowed but riskier).
-
-Score & choose (utility with penalties; selection stochastic via softmax recommended).
-
-Resolve immediately (movement, chats, contagion, accident rolls).
-
-12. Mortality (unified)
-
-All causes as hazards; combine per tick: p_total = 1 − Π(1 − p_i).
-
-Old age: logistic hazard; ~50% near ~90 years.
-
-Disease: hazard derived from Process severity (L/E) by kind.
-
-Accidents: from action-time risk kernel (travel, etc.).
-
-Starvation: simple scalar that weakens with repeated hunger (details deferred).
-
-Suicide/anomie: from meme/meaning process crossing thresholds.
-
-13. Age bias & immunity
-
-Chickenpox adds age-weight to λ (youth-biased).
-
-Per-disease immunity: sterilizing (bool) + waning rate.
-
-14. Time & randomness
-
-Δt is the global tick unit; all rates scale by Δt.
-
-Poisson/Bernoulli for transmissions, accidents, mortality rolls.
-
-15. Data ranges / conventions
-
-Relationship weight in [-1, 1].
-
-Edge weights (pathogen/infestation) in [0, 1]; node Process holds true state (L,E).
-
-Clamp L,E ≥ 0; clamp status vectors to bounded range.
-
-16. Open / intentionally deferred
-
-Licensing/policy system (gates/predicates finalized later).
-
-Exact parameter tables for each disease/infestation/meme.
-
-Starvation detailed kinetics (kept as scalar for now).
-
-Illegal-action policy toggle (soft-penalty vs hard-block) left configurable.
-
-
----
-
-## Outline (decisions, terse)
-
-1. Summary
-
-Entities are agents and locations; both can carry state and directed graph edges.
-
-All interactions use one kernel (dot product of source affinity and target state).
-
-Ongoing phenomena (disease, infestations, memes) use one load/defense process on the node.
-
-Events resolve in systems immediately (Poisson draws, no event entities).
-
-Mortality is unified: multiple hazards computed per tick and combined.
-
----
-
-2. Abstract Systems
-
-**Events**
-
-Systems compute rates from context, draw once, apply effects now.
-
-Ordering via system schedule only; nothing persisted.
-
-**Graph**
-
-Per-entity component of outgoing edges.
-
-Edge: { to, kind, channel, weight, kernel_id }.
-
-Kinds: relationship | pathogen | infestation | meme (extensible).
-
-Weights decay by kind-specific rule; updates come from the kernel.
-
-**Kernel**
-
-effect = v_affinity(kind, channel, source, ctx) ⋅ u_state(target, ctx).
-
-Channels give context (e.g., talk, shared_air, sex, touch, media, presence, bedding, highway).
-
-Status (see below) perturbs v and/or u.
-
-**Load/Defense process (node-local)**
-
-State: L (load), E (defense efficacy).
-
-Per tick: growth raises L; adaptive defense raises E; clearance lowers L.
-
-Optional fruiting/shedding phase boosts outward effect.
-
-Used for: diseases (agents), infestations (locations), memes/infatuations (agents).
-
-**Status Effects**
-
-Many timed modifiers; each is a small vector with decay/duration.
-
-Aggregated each tick → clamped StatusVector used by kernels/gates.
-
-Examples: intoxication, fatigue, weather.
-
-**Decisions**
-
-Per agent per tick: generate options → gate → score → choose → resolve.
-
-Gate = simple predicates against state/context; remove infeasible options.
-
-Score = features·weights minus any penalties; choose (softmax or argmax).
-
-Resolve immediately (movement, chats, contagion, accident checks).
-
-
----
-
-3. Agents
-
-**Mortality (unified)**
-
-Per-cause hazard → probability: p_i = 1 − exp(−h_i·Δt).
-
-Combine: p_total = 1 − Π(1 − p_i) (single death roll per tick).
-
-Old age: logistic hazard; ~50% near ~90 (tunable).
-
-Disease: hazard derived from current L,E (severity by disease kind).
-
-Starvation: simple stamina-like scalar; repeated hunger worsens recovery (kept minimal for v1).
-
-Accidents: hazards during risky actions (esp. travel); kernel mixes speed, sobriety, seatbelt, vehicle safety, weather.
-
-Suicide / anomie: meme-style process; when meaning collapses, add hazard.
-
-**Disease (design details)**
-
-Where state lives: on the node (agent); edges only carry exposure pathways.
-
-Parameters per disease kind (set in main):
-
-growth {r,K}; defense {alpha, rho, gamma, n}; shedding {sigma, a, b, fruit?}; transmission {β_by_channel}; immunity {sterilizing, waning_kappa}; hazard mapping (L,E)→h.
-
-Within-host update: rise–peak–fall from growth vs defense; shedding derived from load.
-
-Transmission: per edge/channel: λ = β_channel · (v⋅u) · shedding; draw Poisson; on success, create/boost process on target.
-
-Immunity: sterilizing or waning; affects future susceptibility/defense.
-
-Note (examples are parameter sets only): flu, chickenpox (age-biased kernel, sterilizing), AIDS (suppresses defense), malaria (coupled to location mosquito load).
-
-**Relationships**
-
-Edge weight represents tie strength/valence.
-
-Update on interaction: Δw = kernel − decay(weight, Δt); supports “fruiting” phases (e.g., marriage).
-
-**Action/Status**
-
-ActionPrefs (features/weights) guide scoring.
-
-StatusVector summarizes current temporary effects for kernels and gates.
-
-
----
-
-4. Locations
-
-**Space & Movement**
-
-Locations are nodes; travel nodes add { queue (FIFO), capacity, service_rate, channel }.
-
-Movement: enqueue at origin, dequeue by capacity/rate to next hop; congestion = queue growth.
-
-City/country structure is just graphs of these nodes (residential, business, commercial, junction, highway, border, airport, port).
-
-**Infestations**
-
-Same load/defense process on the location (e.g., roaches, bedbugs, mosquito load).
-
-Shedding adds local exposure pressure for present agents via appropriate channels (presence, bedding, food_surface, etc.).
-
-**Accident venues**
-
-Certain channels (e.g., highway) add accident checks during movement resolution; risk uses the same kernel structure with location/agent factors.
-
----
-
-5. Extra Notes / Undecided
-
-Licensing/policy gates (age, sobriety, etc.) not finalized; action gating exists but policy content TBD.
-
-Starvation kinetics intentionally simple for v1; richer nutrition model deferred.
-
-Exact parameter tables for diseases/infestations/memes set via builders in main.
-
-Tick unit Δt (hours/days) chosen in main; all rates scale accordingly.
-
-## Design & Naming Guidelines (Agents & Jobs)
-
-Files & Modules
-
-Per domain folder: mod.rs, component.rs, plugin.rs, system.rs (optional).
-
-UI goes in that domain under ui.rs and is always #[cfg(feature = "graphics")].
-
-Builder-only types live with their component (e.g., jobs/component.rs has Job, RoleSpec, JobBuilder).
-
-Features & Runtime Modes
-
-Headless is default-safe. Only graphics code behind:
-
-#[cfg(feature = "graphics")] mod view;
-
-In main, gate DefaultPlugins + any UI plugins with #[cfg(feature = "graphics")].
-
-Time: use Time<Real> everywhere unless explicitly sim-virtual later. Do not mix.
-
-Components (nouns, data only)
-
-Name with TitleCase nouns: Person, Job, Unemployed, Age, Inventory.
-
-No behavior inside components. Keep them #[derive(Component, Debug)] if useful.
-
-Boolean tags are single-word marker components (Unemployed, Student). Avoid is_* fields.
-
-Resources (global state)
-
-Name with TitleCase nouns: Records, Gregslist, GameRNG, ApplicationInbox.
-
-Prefer small, purpose-built resources over god-objects.
-
-If a resource broadcasts changes, add an event instead of storing flags.
-
-Events
-
-Past-tense, TitleCase: BabyBorn, Death, VacancyDirty.
-
-Keep payloads minimal (entity ids, role index, timestamp).
-
-Emit with .write(...) in systems; never read-modify-write events.
-
-Systems (present-tense verbs)
-
-Name with snake_case verbs describing one effect:
-
-post_job_openings, apply_for_jobs, evaluate_and_assign, gregslist_expiration_system.
-
-One responsibility per system; chain when needed: (A, B, C).chain().
-
-Parameters are explicit; avoid broad Query<(&A, &B, Option<&C>)> unless necessary.
-
-No global mutable state; mutate via Commands, ResMut<T>, or event writers only.
-
-Plugins
-
-One plugin per domain: GregslistPlugin, HiringManagerPlugin, RecordsPlugin.
-
-Plugins register systems/events/resources—nothing else.
-
-Constructor params reflect operational caps/config (e.g., HiringManagerPlugin::new(max_hires_per_role_per_cycle)).
-
-Jobs & Hiring Domain Terms
-
-Job: component on an entity that hosts roles: Vec<(RoleSpec, Vec<Entity>)>.
-
-RoleSpec: { min, max, constraints } (data only).
-
-Constraints enum lives with jobs; methods on JobBuilder are sugar: age_lt(n), age_gte(n).
-
-Gregslist: ads: Vec<Advert>, index: HashSet<(job, role_index)>.
-
-Advert: { job: Entity, role_index: usize, date_posted: f32 } (no logic).
-
-ApplicationInbox: Vec<Resume> queue consumed by evaluate_and_assign.
-
-Resume: { applicant, job, role_index }.
-
-Unemployed: marker removed on hire; used to compute "employed" count.
-
-UI (graphics feature only)
-
-All UI systems gated with #[cfg(feature = "graphics")].
-
-Text widgets are resources pointing to Entity ids (e.g., PopulationText, EmploymentText).
-
-Update loops read world state only; no side-effects beyond text mutation.
-
-Naming Patterns (consistency)
-
-Functions: verb_object[_qualifier]
-
-Good: record_births, update_employment_text, spawn_jobs.
-
-Config types: ThingConfig (BabySpawnerConfig, GregslistConfig, HiringConfig).
-
-Helpers inside a module: private fn constraints_ok(...) -> bool.
-
-Style
-
-Comments: sentence case, concise; align operators when it clarifies blocks.
-
-Keep systems ≤ ~30 lines; factor helpers if they grow.
-
-No placeholder names; if it’s not real, don’t add it.
-
-Don’t introduce logging/validation/“future hooks” unless asked.
-
-Data Flow (jobs search → hire)
-
-1. gregslist_expiration_system trims stale ads and emits VacancyDirty.
-
-2. post_job_openings reconciles each Job role vs min, (add/remove) Adverts.
-
-3. apply_for_jobs reads Gregslist, filters by constraints, enqueues Resumes for Unemployed.
-
-4. evaluate_and_assign admits up to HiringConfig.max_hires_per_role_per_cycle, removes Unemployed, and emits VacancyDirty.
-
-Metrics & Counters
-
-“Employed” = count<Person> - count<Unemployed>.
-
-Counters live in records domain; UI mirrors via text resources.
-
-Rolling stats (RollingMean) store timestamps; never compute by scanning history each frame.
-
+# Overview
+## Abstract Systems
+- gameEvent System
+    - instantiated with builder syntax
+        - has trigger parameter
+            - use syntax ".with_trigger(Proximity)"
+                - despite the exact example above, proximity will need to be instantiated with a location graph, to be created previously, and it will have to be aware of the inventory system
+            - will need something like trigger frequency where events occur according to a Poisson distribution
+        - something like "event_resolver" is run when the proximity trigger is set
+            - gameEvents will take in whatever resources they need to, perform a calculation and then update some resource
+            - the builder syntax for adding something like a "chatEvent" in which two people in close vicinity talk about once every 5 minutes and depending on their personalities either increases or decreases their relationship would look something like "GameEventSys::new().with_trigger(Proximity::new(location_graph)).with_freq(5 * MIN).with_resolver(ChatEvent::new(personality_resolver_matrix, relationship_graph)" -- although I'm iffy on the implementation and syntax of how the event resolver works and even if it's a system or whatever it is exactly.
+ 
+- Graph
+    - a graph implemented as a component which is little more than a hashmap associating each neighboring entity with some kind of state, such as a float, vector of numbers, bool, what-have-you.
+    - it's important to remember that components are not attached to entities in an ECS, but that a component is a singular thing that maps entities to data and that "adding a component" is actually just telling the component to create an entry for this entity. Thus, the graph component is a single data structure that maps entities to a hashmap of relationships or state.
+    - conventional graph terminology to be used: edge, vertex, weight, directed, etc.
+
+- Activity and Decision System
+    - agent has a list of actions it can engage in, weighs them according to some criteria and then chooses an action
+    - this implies there must be some sort of action class/object whatever and then that there be an evaluation criteria and conditions and restrictions. It's got to be a whole thing.
+
+- Status effects
+    - are attached (to a component?) and affect a variable over time
+    - system updates and removes the status effect
+
+- Timescale
+    - an internal speed parameter is used because the game is stated in terms of seconds, but you're going to want to simulate weeks or years in mere seconds, so we hit limits and try to draw from Poisson distributions instead of simulating each time tick
+
+## Specific Systems
+- Mortality
+    - Death by Old Age System
+        - probability of dying from old age follows a sigmoid curve
+            - function of age component
+                - age component merely increases each turn
+            - parameterized by "steepness" and "sig_max"
+                - default parameters cause the curve to max out at 50% probability at the age of 90
+    - Disease System
+        - contact gameEvent pops up every time there is potential "contact" between people in close proximity
+        - each event is associated with air, skin, spit, feces, blood contact and represented as a vector
+        - viral load is then updated on each entity's ImmuneComplex component [to do: come up with a better name than ImmuneComplex]
+        - system grows as follows:
+            - load grows according to a parameterized logistic curve
+            - immune system reduces viral load each update
+                - effectiveness increases over time
+                - how much effectiveness increases over time is a function of how often the white blood cells interact with the disease, which is going to be some function of viral load and white_cell load on its ImmuneComplex component
+            - viral load transfer is determined by a spread vector, which in this case is the affinity the disease has for spreading along the lines of air, skin, spit, feces, or blood. Simple linear algebra determines how much of the disease is likely to spread given the contact event vector.
+                - a latency curve, another logistic curve parameterized by the specific disease is applied to the viral load transfer to determine what percentage of the spreader's viral load can be transferred from the contact
+            - susceptibility reduces the effectiveness of the spread. Transmission will be reduced given the affinity of a particular disease to spreading to people with a compromised immune system, [come up with more examples]
+            - examples of default diseases to add: flu, chickenpox, AIDS, malaria
+                - malaria may be unique in that it will also infect locations and agents will be infected simply from being in a location
+        - white_cell load also goes down each turn [since I'm imagining this as more like immune system health than literal white blood cell count, perhaps we need a better name]
+            - the max value for this parameter will be reduced for children and the elderly, and by some accumulating factors such as times you've gotten sick, or other events we may program in later (malnutrition, injury, individual variation)
+    - Accidents and Injuries
+        - mortality is also modulated by various gameEvents
+        - when a user is currently engaged in an activity, there will be some vector associated with it that calculates the probability that a given event will trigger
+        - example: see car accident event under Driving
+    - Driving
+        - highways are modeled as nodes in the location graph
+            - the inventory is actually a FIFO queue
+            - the driving system dequeues cars from the highway exponentially slower the more cars are on the highway
+            - when the inventory is full, the highway is "jammed" and no cars may be queued
+        - car accident event
+            - car accident event can trigger whenever an agent is engaged in the activity of driving
+            - whether or not a traffic accident event is triggered is stochastically generated on the following factors
+                - skill of driver
+                    - decreased greatly by a drunkenness status effect
+                    - decreased slightly by drowsiness status effect
+                    - changes with age; should approximately match this data: ![65be8ee8f684e60b48c9725d09a57151.png](:/4621e160ce3e4af7a4e9b39b0858faee)
+                - number of people in the current traffic node (linear or nearly linear function): ![18ffe2037d1b17be7a1c95435f4d9890.png](:/78e302d40c9b4d07aa8ace181af130b5)
+                - road conditions determined by
+                    - water saturation
+                        - increases during rainy weather
+                        - decreases faster during hot temperatures
+                    - ice saturation
+                        - water saturation is converted to ice saturation at a given rate by how cold it is
+                        - ice saturation is converted to water saturation by warm temperatures
+                - whether or not the driver is speeding, which is determined by a combination of orderliness, psychopathy and respect for authority personality traits
+            - once the event triggers, it is a proximity event and another agent is chosen in that location
+                - first, the severity of the accident is randomly chosen, then how each driver is affected by it and if the total exceeds some threshold, they die
+    - Relationships
+        - building friendships
+            - chat is a proximity event in which two people compare a random subset of their personality, evaluate how they feel about it according to their own personality and increment the edge weight in the relationship graph (they modify their own relationship component)
+            - some personality traits come off as negative even to people with that personality trait. So if we model personality as OCEAN plus intelligence, the interaction matrix comes off looking something like this:
+                - [[ 1.0, 0.2, 0.0, 0.3, -0.5, 0.1],
+                  [ 0.0, 1.0, 0.2, 0.5, -0.2, 0.1],
+                  [ 0.1, 0.2, 1.0, 0.3, -0.3, 0.2],
+                  [ 0.0, 0.5, 0.3, 1.0, -0.4, 0.0],
+                  [-0.2,-0.1,-0.1,-0.2, 1.0,-0.1],
+                  [ 0.2, 0.2, 0.2, 0.2,-0.2, 1.0]]
+            - relationship score decays over time
+            - [todo: make this a logistic curve or something so we have relationship affinity and types so that you don't stop loving your mom just because you haven't seen her in years]
+        - marriage
+            - [in the future the marriage system is based on the market system, but agents aren't that dissatisfied with being unemployed]
+            - every once in a while, an agent will evaluate his relationships with all the women in his life, filter it out by relatedness and gender, and propose marriage to that person, after which they move in together and can have kids [explain this in more detail]
+    - Home
+        - every entity with a home will be placed in their home should their itinerary be empty
+    - Jobs
+        - A job is a collection of roles associated with a location
+        - A role is a set of requirements along with a job contract
+        - A job contract is typically a salary and a schedule requirement.
+        - Each role has an associated maximum and minimum.
+        - The hiring manager will submit job postings if the number of people in a role falls below a threshold and start firing people if it exceeds a given threshold.
+        - Salary expectations gradually rise. If salary expectations exceed the current job's salary by some set percentage, then the agent will start applying to jobs. Remember that applying to jobs and not getting them will reduce their salary expectations.
+    - Wantads
+        - a pool of job postings
+        - refreshes each week
+        - seekers apply to jobs
+            - a "resume" is generated and queued in the hiring manager's inbox
+            - must have evaluation criteria such as minimum salary
+            - apply to the X most desirable jobs
+            - each week that no job is given, the evaluation criteria weakens
+        - hiring manager evaluates resumes
+            - removes any resume that does not meet minimum requirement
+            - sorts remaining resumes by desirability
+            - hires x people at a time where x is going to be initially a setting passed in
+    - Schools
+        - schools are jobs that hire children as students
+        - they also hire teachers
+        - perhaps a student/teacher ratio can be set
+            - perhaps instead schools just get budgets and the hiring manager just keeps lowering max teachers until they're making even again
+
+## UI
+- conceived as a system of documents like a census, jobs report, etc.
+- when children are born, etc., an event is sent to update the game statistics
+
+## Coding
+- Ontologically obvious main.rs
+    - All parameters must be passed in through main in a manner that makes it sound like we're defining and describing the game, essentially like how this document looks. You should be able to read main and figure out exactly how the rest of the codebase works.
+        - avoid default instantiations unless it's zero-like
+        - favor builder syntax
+- Avoid using Bevy Resources unless it actually makes sense that we're defining and creating something not associated with entities and that is special purpose and global.
+- use singular terms whenever possible (don't call a file components.rs, call it component.rs even if there are multiple components in it)
+- use gamey or common everyday terms when possible
+
+## Design
+- Eventually all system behavior will be emergent from simpler systems, which are essentially rough simulations. Always try to go a step more emergent in to get to the feature or statistic you want.
+- "Cute ideas" are when you can say something like "a location is just an entity with an inventory system where people can be in the inventory". This allows us to design an inventory system and apply it to locations and get not just code reuse, but the ability to get better emergent behavior
+    - other examples: pest infestations are just diseases that infect locations, a dead bedroom occurs when your wife friend-zones you, going to elementary school is just a job position that only hires children
+    - Code should enable components and systems to act as "cute ideas" in the future if such a cute idea occurs to me.
+- use usize whenever possible. Never use f32 unless you absolutely have to because of how the game is coded.
+- Don't inline static functions; they're already inlined by the compiler.
