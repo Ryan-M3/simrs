@@ -25,6 +25,9 @@ mod view;
 use crate::baby_spawner::{BabySpawnerConfig, BabySpawnerPlugin};
 use crate::inventory::InventoryPlugin;
 use crate::mortality::system::apply_mortality_with_rate;
+#[cfg(feature = "graphics")]
+use crate::records::VacancyTextPlugin;
+
 use crate::records::{Records, rolling_mean::RollingMean};
 use jobs::Job;
 
