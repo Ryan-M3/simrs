@@ -27,6 +27,7 @@ use crate::inventory::InventoryPlugin;
 use crate::mortality::system::apply_mortality_with_rate;
 #[cfg(feature = "graphics")]
 use crate::records::VacancyTextPlugin;
+
 use crate::records::{Records, rolling_mean::RollingMean};
 use jobs::Job;
 
@@ -79,8 +80,6 @@ fn main() {
         .add_plugins(jobs::JobsPlugin)
         .add_plugins(gregslist::GregslistPlugin::new(60.0))
         .add_plugins(hiring_manager::HiringManagerPlugin::new(8));
-    #[cfg(feature = "graphics")]
-    app.add_plugins(VacancyTextPlugin);
     app.add_systems(Startup, spawn_jobs)
         //.add_systems(Startup, |mut time: ResMut<Time<Real>>| {
         //    time.set_relative_speed(DAY as f32);
