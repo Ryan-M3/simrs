@@ -116,7 +116,7 @@ pub fn update_vacancy_text(
     greg: Res<Gregslist>,
     mut q_text: Query<&mut Text, With<VacancyText>>,
 ) {
-    if let Some(mut text) = q_text.iter_mut().next() {
+    if let Ok(mut text) = q_text.get_single_mut() {
         text.0 = format!("Open roles: {}", greg.ads.len());
     }
 }
