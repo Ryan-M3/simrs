@@ -19,3 +19,8 @@ bevy = { version = "0.16", optional = true }
 default = []
 graphics = ["bevy"]
 
+[dev-dependencies]
+proptest = "1"
+rand08 = { package = "rand", version = "0.8" }
+approx = "0.5"
+

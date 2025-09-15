@@ -4,3 +4,4 @@ pub mod system;
 
 pub use events::Death;
 pub use plugin::MortalityPlugin;
+pub use system::hazard;
